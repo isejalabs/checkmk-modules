@@ -1,0 +1,56 @@
+#!/usr/bin/env python3
+"""Checkmk special agent: bucket quota and usage of a RustFS, one reading per configured bucket.
+
+The secret key is passed as a Password Store reference (`<id>:<path to the merged password file>`) and resolved here,
+so it is never on the command line. Writes the section `rustfs_quota`: one JSON object per line and bucket, with either
+the reading or the reason why none could be obtained.
+"""
+
+import sys
+from pathlib import Path
+
+from cmk.special_agents.v0_unstable.agent_common import SectionWriter, special_agent_main
+from cmk.special_agents.v0_unstable.argument_parsing import Args, create_default_argument_parser
+from cmk.utils.password_store import lookup
+
+from cmk_addons.plugins.rustfs_quota.lib.client import fetch_bucket_quota
+
+
+def parse_arguments(argv: list[str] | None) -> Args:
+    parser = create_default_argument_parser(description=__doc__)
+    parser.add_argument("--endpoint", required=True, help="RustFS base URL, for example https://host:9000")
+    parser.add_argument("--access-key", required=True, help="Access key of the monitoring identity")
+    parser.add_argument(
+        "--secret-key", required=True, help="Password Store reference '<id>:<file>' as rendered by Checkmk"
+    )
+    parser.add_argument("--buckets", required=True, help="Comma separated bucket names")
+    parser.add_argument("--timeout", type=float, default=10.0, help="Timeout per request in seconds (default: 10)")
+    return parser.parse_args(argv)
+
+
+def resolve_secret(reference: str) -> str:
+    """The secret behind a Password Store reference. Never echoes the reference's target or the secret."""
+    pw_id, separator, pw_file = reference.partition(":")
+    if not separator or not pw_id or not pw_file:
+        raise ValueError("--secret-key is not a Password Store reference")
+    return lookup(Path(pw_file), pw_id)
+
+
+def agent_main(args: Args) -> int:
+    secret_key = resolve_secret(args.secret_key)
+    buckets = [name.strip() for name in args.buckets.split(",") if name.strip()]
+    with SectionWriter("rustfs_quota") as writer:
+        for bucket in buckets:
+            reading = fetch_bucket_quota(
+                args.endpoint, args.access_key, secret_key, bucket, timeout=args.timeout
+            )
+            writer.append(reading.to_json())
+    return 0
+
+
+def main() -> int:
+    return special_agent_main(parse_arguments, agent_main)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

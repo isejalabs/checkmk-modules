@@ -12,9 +12,10 @@ Checkmk extension packages (MKP) for the isejalabs homelab: special agents and c
 
 The first package is the RustFS bucket quota monitoring, tracked in [isejalabs/homelab#1529](https://github.com/isejalabs/homelab/issues/1529). It has to implement the rule contract that the `checkmk-rustfs-monitoring` Terraform module writes: a rule for the ruleset `special_agents:rustfs_quota` with `endpoint`, `access_key`, `secret_key` (a Password Store reference) and `buckets`.
 
-## Planned layout and conventions (initial, adjust as the first package is built)
+## Layout and conventions
 
 - One folder per package (an MKP), versioned independently, tagged `<package>-v<semver>`, each with its own `CHANGELOG.md` in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format (same convention as `terraform-modules`). The built MKP is attached to the GitHub Release.
+- A package lives in `packages/<name>/` with its plugin tree in `src/cmk_addons/plugins/<name>/`, its unit tests in `tests/` (stdlib `unittest`, so they run with the site's Python), a `<name>.manifest` (the MKP manifest) and a README and CHANGELOG. `scripts/mkp.sh test|build <name>` tests and builds a package inside a throwaway Checkmk Raw container; CI runs the tests the same way.
 - A package mirrors the layout under `~/local/lib/python3/cmk_addons/plugins/<family>/` of a Checkmk 2.4 site: `libexec/` (the special agent executable), `rulesets/`, `server_side_calls/`, `agent_based/`, `graphing/`.
 - Python 3.12, the version of the Checkmk 2.4 site. Do not rely on libraries beyond what the site bundles; as of 2.4.0p37 that includes `requests`, `urllib3`, `boto3`/`botocore` and `pydantic`, but check the target version before depending on any of them, and prefer the standard library.
 - A special agent must never receive a secret on its command line or log one. A rule passes a Password Store reference (`<id>:<path>`), which the agent resolves itself with `cmk.utils.password_store.lookup`; an unresolved reference or a failed request is reported as UNKNOWN or an agent error, never as a zero value.

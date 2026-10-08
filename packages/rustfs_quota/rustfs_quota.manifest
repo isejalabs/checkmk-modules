@@ -1,0 +1,19 @@
+{'author': 'isejalabs',
+ 'description': 'Special agent and check plug-in for the bucket quotas of a RustFS. The agent queries the RustFS '
+                'admin API (AWS Signature Version 4, standard library only) with a bucket-scoped read-only identity '
+                'whose secret is a Password Store reference, and the check shows one service per bucket with used-space '
+                'levels, growth trend and time until the quota is full, through the filesystem rules.',
+ 'download_url': 'https://github.com/isejalabs/checkmk-modules',
+ 'files': {'cmk_addons_plugins': ['rustfs_quota/agent_based/rustfs_quota.py',
+                                  'rustfs_quota/lib/__init__.py',
+                                  'rustfs_quota/lib/client.py',
+                                  'rustfs_quota/lib/sigv4.py',
+                                  'rustfs_quota/libexec/agent_rustfs_quota',
+                                  'rustfs_quota/rulesets/special_agent.py',
+                                  'rustfs_quota/server_side_calls/special_agent.py']},
+ 'name': 'rustfs_quota',
+ 'title': 'RustFS bucket quota',
+ 'version': '0.1.0',
+ 'version.min_required': '2.4.0',
+ 'version.packaged': 'cmk-mkp-tool 1.0.0',
+ 'version.usable_until': None}

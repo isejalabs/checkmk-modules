@@ -6,7 +6,7 @@ Checkmk extension packages (MKP) for the isejalabs homelab: special agents and c
 
 | Package | Purpose | Status |
 | --- | --- | --- |
-| `rustfs_quota` | Per-bucket quota and usage of the RustFS backup buckets: a special agent querying the RustFS admin API and a check plugin with one service per bucket | planned, see [isejalabs/homelab#1529](https://github.com/isejalabs/homelab/issues/1529) |
+| [`rustfs_quota`](packages/rustfs_quota) | Per-bucket quota and usage of the RustFS backup buckets: a special agent querying the RustFS admin API and a check plugin with one service per bucket, with levels, trend and time until full | implemented, not released yet; see [isejalabs/homelab#1529](https://github.com/isejalabs/homelab/issues/1529) |
 
 ## How it fits together
 
@@ -15,7 +15,7 @@ Checkmk extension packages (MKP) for the isejalabs homelab: special agents and c
 
 ## Development
 
-Not set up yet; see `AGENTS.md` for the intended conventions. Contributions follow the shared conventions in [`isejalabs/commons`](https://github.com/isejalabs/commons) (included as the `.commons` submodule: run `git submodule update --init` after cloning).
+`scripts/mkp.sh test|build <package>` tests and builds a package in a throwaway Checkmk Raw container (needs docker); see `AGENTS.md` for the conventions. Contributions follow the shared conventions in [`isejalabs/commons`](https://github.com/isejalabs/commons) (included as the `.commons` submodule: run `git submodule update --init` after cloning).
 
 ## License
 

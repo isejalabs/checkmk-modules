@@ -218,3 +218,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+dist/
+
+# The Python template above ignores lib/ and *.manifest, but Checkmk plugin trees have a lib/ folder and every package
+# has an MKP manifest: keep them.
+!packages/**/lib/
+!packages/**/*.manifest

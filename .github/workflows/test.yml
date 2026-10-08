@@ -1,0 +1,17 @@
+name: Test
+on:
+  pull_request:
+  push:
+    branches:
+    - main
+
+jobs:
+  rustfs-quota:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+    # Runs the unit tests with the Python of a throwaway Checkmk Raw 2.4 container (the plugin imports modules that only
+    # exist in a Checkmk site), see scripts/mkp.sh.
+    - run: scripts/mkp.sh test rustfs_quota
