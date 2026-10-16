@@ -1,0 +1,19 @@
+{'author': 'isejalabs',
+ 'description': 'Special agent and check plug-in for Longhorn disk capacity and health. The agent queries a '
+                'Longhorn deployment\'s unauthenticated /v1/nodes API (through the environment\'s existing '
+                'Longhorn UI route) and the check shows, per node and disk, physical usage, Longhorn\'s own '
+                'scheduled/allocated usage kept as a separate service, and a disk/node health service, '
+                'through the filesystem rules for the two capacity services.',
+ 'download_url': 'https://github.com/isejalabs/checkmk-modules',
+ 'files': {'cmk_addons_plugins': ['longhorn_capacity/agent_based/longhorn_capacity.py',
+                                   'longhorn_capacity/lib/__init__.py',
+                                   'longhorn_capacity/lib/client.py',
+                                   'longhorn_capacity/libexec/agent_longhorn_capacity',
+                                   'longhorn_capacity/rulesets/special_agent.py',
+                                   'longhorn_capacity/server_side_calls/special_agent.py']},
+ 'name': 'longhorn_capacity',
+ 'title': 'Longhorn disk capacity',
+ 'version': '0.1.0',
+ 'version.min_required': '2.4.0',
+ 'version.packaged': 'cmk-mkp-tool 1.0.0',
+ 'version.usable_until': None}
