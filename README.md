@@ -7,6 +7,7 @@ Checkmk extension packages (MKP) for the isejalabs homelab: special agents and c
 | Package | Purpose | Status |
 | --- | --- | --- |
 | [`rustfs_quota`](packages/rustfs_quota) | Per-bucket quota and usage of the RustFS backup buckets: a special agent querying the RustFS admin API and a check plugin with one service per bucket, with levels, trend and time until full | implemented, not released yet; see [isejalabs/homelab#1529](https://github.com/isejalabs/homelab/issues/1529) |
+| [`longhorn_capacity`](packages/longhorn_capacity) | Per-node, per-disk Longhorn capacity and health: a special agent querying Longhorn's unauthenticated `/v1/nodes` API and a check plugin with physical usage, scheduled/allocated usage (kept distinct) and a health service per disk | implemented, not released yet; see [isejalabs/homelab#1438](https://github.com/isejalabs/homelab/issues/1438) |
 
 ## How it fits together
 
