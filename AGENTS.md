@@ -6,6 +6,8 @@ This file provides guidance to AI coding agents (Claude Code, and others reading
 
 @.commons/agents/AGENTS.common.md
 
+The shared conventions in `.commons/agents/AGENTS.common.md` apply here. Agents that do not expand the `@` import must initialize the submodule and read that file directly.
+
 ## About
 
 Checkmk extension packages (MKP) for the isejalabs homelab: special agents and check plugins written in Python against the Checkmk plugin APIs, built and released from here. The monitoring itself (the Checkmk site on `monitoring2`) and its configuration live elsewhere: the Checkmk objects (Password Store entries, hosts, rules) are managed with Terraform in [isejalabs/terraform-modules](https://github.com/isejalabs/terraform-modules) and [isejalabs/homelab](https://github.com/isejalabs/homelab) (see ADR 0015 there), and the host itself is managed with Salt. This repo only builds the plugins that run inside that Checkmk site.
