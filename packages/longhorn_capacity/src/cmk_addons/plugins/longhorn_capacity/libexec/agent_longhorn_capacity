@@ -1,36 +1,92 @@
 #!/usr/bin/env python3
 """Checkmk special agent: per-node, per-disk capacity and health of a Longhorn deployment.
 
-Queries one Longhorn API endpoint (the environment's existing Longhorn UI route, which proxies `/v1/*` to the
-backend) and writes the section `longhorn_capacity`: one JSON object per line, one per disk, or a single object
-reporting the whole request failed if `/v1/nodes` could not be read at all. The Longhorn API has no
-authentication of its own, so there is no secret to resolve here.
+Two sources:
+
+- `--api-server` with `--token`: reads the Longhorn CRDs through the Kubernetes API with a read-only ServiceAccount
+  token. The token is passed as a Password Store reference (`<id>:<path to the merged password file>`) and resolved
+  here, so it is never on the command line. The cluster CA is passed base64-encoded (`--ca-cert-b64`), so the PEM's
+  line breaks never reach the command line either. Writes the sections `longhorn_capacity`, `longhorn_volumes` and
+  `longhorn_instance_managers`.
+- `--endpoint` (legacy): queries the Longhorn API through the environment's Longhorn UI route, which has no
+  authentication of its own. Writes only the section `longhorn_capacity`.
+
+Each section has one JSON object per line, or a single object reporting why the whole list could not be read.
 """
 
+import base64
+import binascii
 import sys
+from pathlib import Path
 
 from cmk.special_agents.v0_unstable.agent_common import SectionWriter, special_agent_main
 from cmk.special_agents.v0_unstable.argument_parsing import Args, create_default_argument_parser
+from cmk.utils.password_store import lookup
 
-from cmk_addons.plugins.longhorn_capacity.lib.client import fetch_node_disks
+from cmk_addons.plugins.longhorn_capacity.lib.client import fetch_kubernetes, fetch_node_disks, ssl_context
 
 
 def parse_arguments(argv: list[str] | None) -> Args:
     parser = create_default_argument_parser(description=__doc__)
-    parser.add_argument(
-        "--endpoint",
-        required=True,
-        help="Longhorn base URL, for example http://longhorn.dev.iseja.net (the existing UI route)",
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument(
+        "--api-server",
+        help="Kubernetes API server URL, for example https://dev-homelab-k8s-api.example.net:6443",
     )
-    parser.add_argument("--timeout", type=float, default=10.0, help="Request timeout in seconds (default: 10)")
-    return parser.parse_args(argv)
+    source.add_argument(
+        "--endpoint",
+        help="Longhorn base URL, for example http://longhorn.dev.iseja.net (the existing UI route; legacy)",
+    )
+    parser.add_argument("--token", help="Password Store reference '<id>:<file>' as rendered by Checkmk")
+    parser.add_argument("--ca-cert-b64", help="Base64 of the PEM CA certificate(s) of the API server")
+    parser.add_argument("--namespace", default="longhorn-system", help="Namespace of Longhorn (default: longhorn-system)")
+    parser.add_argument("--timeout", type=float, default=10.0, help="Timeout per request in seconds (default: 10)")
+    args = parser.parse_args(argv)
+    if args.api_server and not args.token:
+        parser.error("--api-server needs --token")
+    return args
+
+
+def resolve_secret(reference: str) -> str:
+    """The secret behind a Password Store reference. Never echoes the reference's target or the secret."""
+    pw_id, separator, pw_file = reference.partition(":")
+    if not separator or not pw_id or not pw_file:
+        raise ValueError("--token is not a Password Store reference")
+    return lookup(Path(pw_file), pw_id)
+
+
+def decode_ca(value: str | None) -> str | None:
+    if not value:
+        return None
+    try:
+        return base64.b64decode(value, validate=True).decode("ascii")
+    except (binascii.Error, UnicodeDecodeError) as exc:
+        raise ValueError("--ca-cert-b64 is not base64 of a PEM certificate") from exc
 
 
 def agent_main(args: Args) -> int:
-    readings = fetch_node_disks(args.endpoint, timeout=args.timeout)
+    if args.endpoint:
+        with SectionWriter("longhorn_capacity") as writer:
+            for reading in fetch_node_disks(args.endpoint, timeout=args.timeout):
+                writer.append(reading.to_json())
+        return 0
+
+    readings = fetch_kubernetes(
+        args.api_server,
+        resolve_secret(args.token),
+        namespace=args.namespace,
+        context=ssl_context(decode_ca(args.ca_cert_b64)),
+        timeout=args.timeout,
+    )
     with SectionWriter("longhorn_capacity") as writer:
-        for reading in readings:
-            writer.append(reading.to_json())
+        for disk in readings.disks:
+            writer.append(disk.to_json())
+    with SectionWriter("longhorn_volumes") as writer:
+        for volume in readings.volumes:
+            writer.append(volume.to_json())
+    with SectionWriter("longhorn_instance_managers") as writer:
+        for manager in readings.instance_managers:
+            writer.append(manager.to_json())
     return 0
 
 
